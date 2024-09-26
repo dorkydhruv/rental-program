@@ -20,24 +20,6 @@ pub mod rental_program {
         ])?;
         Ok(())
     }
-
-    pub fn submit_work(ctx:Context<SubmitWork>,worker:Pubkey)->Result<()>{
-        let bounty= &mut ctx.accounts.bounty_account;
-        bounty.status = BountyStatus::InProgress;
-        bounty.worker = Some(worker);
-        Ok(())
-    }
-
-    pub fn claim_bounty(ctx:Context<ClaimBounty>)->Result<()>{
-        let bounty = &mut ctx.accounts.bounty_account;
-        bounty.status = BountyStatus::Claimed;
-        invoke(&system_instruction::transfer(bounty.to_account_info().key, ctx.accounts.worker.to_account_info().key, bounty.amount), &[
-            ctx.accounts.bounty_account.to_account_info(),
-            ctx.accounts.worker.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ])?;
-        Ok(())
-    }
 }
 
 
@@ -57,30 +39,7 @@ pub struct CreateBounty<'info>{
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct SubmitWork<'info>{
-    #[account(mut)]
-    pub worker: Signer<'info>,
-    #[account(mut)]
-    pub client: Signer<'info>,
-    #[account(
-        mut,
-        seeds=["bounty".as_bytes(),client.key().as_ref()],
-        bump,
-    )]
-    pub bounty_account: Account<'info,Bounty>,
-}
 
-#[derive(Accounts)]
-pub struct ClaimBounty<'info> {
-    #[account(mut)]
-    pub worker: Signer<'info>,
-    #[account(mut)]
-    pub client: Signer<'info>,
-    #[account(mut,seeds=["bounty".as_bytes(),client.key().as_ref()], bump, close = client)]
-    pub bounty_account: Account<'info, Bounty>,
-    pub system_program: Program<'info, System>,
-}
 
 #[account]
 pub struct Bounty{
