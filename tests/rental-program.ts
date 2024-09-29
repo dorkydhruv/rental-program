@@ -21,6 +21,7 @@ describe("rental-program", () => {
     amount: new anchor.BN(1.2 * anchor.web3.LAMPORTS_PER_SOL),
   };
   const worker = anchor.web3.Keypair.generate();
+
   it("Creates a bounty", async () => {
     const tx = await program.methods
       .createBounty(data.id, data.amount)
@@ -38,6 +39,7 @@ describe("rental-program", () => {
       })
       .rpc();
     const acc = await program.account.bounty.fetch(bountyAccount);
-    expect(acc.worker).to.eq(worker.publicKey);
+    expect(acc.worker.toString()).to.eq(worker.publicKey.toString());
+    expect(acc.status).to.deep.equal({ inProgress: {} });
   });
 });

@@ -1,22 +1,21 @@
 use anchor_lang::prelude::*;
+
 declare_id!("CFHjCR3Xe4Ek9rsGeDscS4TtMJwhpRuR4nDkP3B6RmtM");
 
 #[program]
 pub mod rental_program {
     use anchor_lang::solana_program::{program::invoke, system_instruction};
     use super::*;
-    pub fn create_bounty(ctx:Context<CreateBounty>,id:String, amount:u64)->Result<()>{
-        //get ref of bounty account
-        let bounty= &mut ctx.accounts.bounty;
 
-        //initialize bounty account
+    pub fn create_bounty(ctx: Context<CreateBounty>, id: String, amount: u64) -> Result<()> {
+        let bounty = &mut ctx.accounts.bounty;
+
         bounty.client = *ctx.accounts.client.key;
         bounty.amount = amount;
         bounty.id = id;
         bounty.status = BountyStatus::Open;
         bounty.worker = None;
 
-        //transfer amount to bounty account
         let from_pubkey = ctx.accounts.client.to_account_info();
         let to_pubkey = ctx.accounts.bounty.to_account_info();
         let program_info = ctx.accounts.system_program.to_account_info();
@@ -26,39 +25,59 @@ pub mod rental_program {
         Ok(())
     }
 
-    //add worker
-    pub fn add_worker(ctx: Context<AddWorker>,_id:String,worker:Pubkey)->Result<()>{
+    pub fn add_worker(ctx: Context<AddWorker>, _id: String, worker: Pubkey) -> Result<()> {
+        msg!("Adding worker: {:?}", worker);
         let bounty = &mut ctx.accounts.bounty;
         bounty.worker = Some(worker);
+        msg!("Updated worker: {:?}", bounty.worker);
         bounty.status = BountyStatus::InProgress;
+        msg!("Updated status: {:?}", bounty.status);
+        Ok(())
+    }
+
+    //claim the bounty
+    pub fn claim_bounty(ctx: Context<ClaimBounty>)->Result<()>{
+        let bounty = &mut ctx.accounts.bounty;
+        bounty.status = BountyStatus::Claimed;
         Ok(())
     }
 }
 
-//Create bounty instruction
 #[derive(Accounts)]
 #[instruction(id: String)]
-pub struct CreateBounty<'info>{
+pub struct CreateBounty<'info> {
     #[account(mut)]
     pub client: Signer<'info>,
-    #[account(init, payer=client, space=Bounty::INIT_SPACE, seeds=[b"bounty",client.key().as_ref(),id.as_bytes()],bump)]
-    pub bounty: Account<'info,Bounty>,
-    pub system_program:Program <'info,System>,
+    #[account(init, payer=client, space=Bounty::INIT_SPACE+id.len(), seeds=[b"bounty",client.key().as_ref(),id.as_bytes()],bump)]
+    pub bounty: Account<'info, Bounty>,
+    pub system_program: Program<'info, System>,
 }
 
-//Add worker
 #[derive(Accounts)]
 #[instruction(id: String)]
-pub struct AddWorker<'info>{
+pub struct AddWorker<'info> {
     #[account(mut)]
     pub client: Signer<'info>,
     #[account(mut, seeds=[b"bounty",client.key().as_ref(),id.as_bytes()], bump)]
-    pub bounty: Account<'info,Bounty>,
-    // pub system_program:Program <'info,System>,
+    pub bounty: Account<'info, Bounty>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimBounty<'info>{
+    #[account(mut)]
+    pub client: Signer<'info>,
+    #[account(
+        mut,
+        seeds=[b"bounty",bounty.client.key().as_ref(),bounty.id.as_bytes()],
+        bump,
+        close=client
+    )]
+    pub bounty: Account<'info, Bounty>,
+    pub system_program: Program<'info, System>,
 }
 
 #[account]
-pub struct Bounty{
+pub struct Bounty {
     pub client: Pubkey,
     pub amount: u64,
     pub id: String,
@@ -66,12 +85,13 @@ pub struct Bounty{
     pub worker: Option<Pubkey>, 
 }
 
-impl Space for Bounty{
-    const INIT_SPACE: usize =8+32+4+8+1+32; // determinant + client size + amount size + string size + status size + worker size
+impl Space for Bounty {
+    const INIT_SPACE: usize = 8 + 32 + 8 + 4 + 1 + 1 + 32;
+//    + 1 (BountyStatus) + 1 (Option bool) + 32 (Pubkey in Option)
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub enum BountyStatus{
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+pub enum BountyStatus {
     Open,
     InProgress,
     Claimed,
