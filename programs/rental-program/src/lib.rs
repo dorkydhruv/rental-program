@@ -25,7 +25,7 @@ pub mod rental_program {
         Ok(())
     }
 
-    pub fn add_worker(ctx: Context<AddWorker>, _id: String, worker: Pubkey) -> Result<()> {
+    pub fn add_worker(ctx: Context<AddWorker>, worker: Pubkey) -> Result<()> {
         msg!("Adding worker: {:?}", worker);
         let bounty = &mut ctx.accounts.bounty;
         bounty.worker = Some(worker);
@@ -54,23 +54,22 @@ pub struct CreateBounty<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(id: String)]
 pub struct AddWorker<'info> {
     #[account(mut)]
     pub client: Signer<'info>,
-    #[account(mut, seeds=[b"bounty",client.key().as_ref(),id.as_bytes()], bump)]
+    #[account(mut, seeds=[b"bounty",client.key().as_ref(),bounty.id.as_bytes()], bump)]
     pub bounty: Account<'info, Bounty>,
 }
 
 #[derive(Accounts)]
 pub struct ClaimBounty<'info>{
     #[account(mut)]
-    pub client: Signer<'info>,
+    pub worker: Signer<'info>,
     #[account(
         mut,
         seeds=[b"bounty",bounty.client.key().as_ref(),bounty.id.as_bytes()],
         bump,
-        close=client
+        close=worker
     )]
     pub bounty: Account<'info, Bounty>,
     pub system_program: Program<'info, System>,

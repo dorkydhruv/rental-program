@@ -33,13 +33,46 @@ describe("rental-program", () => {
 
   it("Add a worker to bounty", async () => {
     const tx = await program.methods
-      .addWorker(data.id, worker.publicKey)
+      .addWorker(worker.publicKey)
       .accounts({
         client: provider.wallet.publicKey,
+        bounty: bountyAccount,
       })
       .rpc();
     const acc = await program.account.bounty.fetch(bountyAccount);
     expect(acc.worker.toString()).to.eq(worker.publicKey.toString());
     expect(acc.status).to.deep.equal({ inProgress: {} });
+  });
+
+  it("Complete a bounty", async () => {
+    const tx = await program.methods
+      .claimBounty()
+      .accounts({
+        worker: worker.publicKey,
+        bounty: bountyAccount,
+      })
+      .signers([worker])
+      .rpc();
+    // account should not exist
+    try {
+      await program.account.bounty.fetch(bountyAccount);
+    } catch (e) {
+      expect(e.toString()).to.eq(
+        `Error: Account does not exist or has no data ${bountyAccount.toString()}`
+      );
+    }
+    // worker should have the amount
+    const workerAcc = await provider.connection.getAccountInfo(
+      worker.publicKey
+    );
+    const clientAcc = await provider.connection.getAccountInfo(
+      provider.wallet.publicKey
+    );
+    console.log(
+      `Worker account now: ${workerAcc.lamports / anchor.web3.LAMPORTS_PER_SOL}`
+    );
+    console.log(
+      `Client account now: ${clientAcc.lamports / anchor.web3.LAMPORTS_PER_SOL}`
+    );
   });
 });
