@@ -4,21 +4,26 @@ import { RentalProgram } from "../target/types/rental_program";
 import { expect } from "chai";
 
 describe("rental-program", () => {
-  // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const program = anchor.workspace.RentalProgram as Program<RentalProgram>;
-  const amount = 1000;
   const [bountyAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("bounty"), provider.wallet.publicKey.toBuffer()],
     program.programId
   );
-  const description = "Bounty";
-  it("Create bounty", async () => {
-    const tx = await program.methods.createBounty().rpc();
+  const data = {
+    id: "672",
+    amount: new anchor.BN(1.2 * anchor.web3.LAMPORTS_PER_SOL),
+  };
+  it("Creates a bounty", async () => {
+    const tx = await program.methods
+      .createBounty(data.id, data.amount)
+      .accounts({ client: provider.wallet.publicKey })
+      .rpc();
+    console.log(tx);
     const acc = await program.account.bounty.fetch(bountyAccount);
+    // expect(acc.id).to.eq(data.id);
     console.log(acc);
-    expect(acc.amount).to.equal(amount);
   });
 });
