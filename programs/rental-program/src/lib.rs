@@ -25,6 +25,14 @@ pub mod rental_program {
         invoke(ix, &[from_pubkey, to_pubkey, program_info])?;
         Ok(())
     }
+
+    //add worker
+    pub fn add_worker(ctx: Context<AddWorker>,_id:String,worker:Pubkey)->Result<()>{
+        let bounty = &mut ctx.accounts.bounty;
+        bounty.worker = Some(worker);
+        bounty.status = BountyStatus::InProgress;
+        Ok(())
+    }
 }
 
 //Create bounty instruction
@@ -38,6 +46,16 @@ pub struct CreateBounty<'info>{
     pub system_program:Program <'info,System>,
 }
 
+//Add worker
+#[derive(Accounts)]
+#[instruction(id: String)]
+pub struct AddWorker<'info>{
+    #[account(mut)]
+    pub client: Signer<'info>,
+    #[account(mut, seeds=[b"bounty",client.key().as_ref(),id.as_bytes()], bump)]
+    pub bounty: Account<'info,Bounty>,
+    // pub system_program:Program <'info,System>,
+}
 
 #[account]
 pub struct Bounty{
