@@ -35,10 +35,14 @@ pub mod rental_program {
         Ok(())
     }
 
-    //claim the bounty
-    pub fn claim_bounty(ctx: Context<ClaimBounty>)->Result<()>{
+    pub fn close_bounty(ctx:Context<CloseBounty>)->Result<()>{
         let bounty = &mut ctx.accounts.bounty;
-        bounty.status = BountyStatus::Claimed;
+        bounty.status = BountyStatus::Complete;
+        Ok(())
+    }
+
+    //claim the bounty once the bountySattus is marked as Complete
+    pub fn claim_bounty(_ctx: Context<ClaimBounty>)->Result<()>{
         Ok(())
     }
 }
@@ -55,6 +59,14 @@ pub struct CreateBounty<'info> {
 
 #[derive(Accounts)]
 pub struct AddWorker<'info> {
+    #[account(mut)]
+    pub client: Signer<'info>,
+    #[account(mut, seeds=[b"bounty",client.key().as_ref(),bounty.id.as_bytes()], bump)]
+    pub bounty: Account<'info, Bounty>,
+}
+
+#[derive(Accounts)]
+pub struct CloseBounty<'info>{
     #[account(mut)]
     pub client: Signer<'info>,
     #[account(mut, seeds=[b"bounty",client.key().as_ref(),bounty.id.as_bytes()], bump)]
@@ -93,5 +105,5 @@ impl Space for Bounty {
 pub enum BountyStatus {
     Open,
     InProgress,
-    Claimed,
+    Complete,
 }
