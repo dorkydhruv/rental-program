@@ -24,7 +24,7 @@ pub mod rental_program {
         invoke(ix, &[from_pubkey, to_pubkey, program_info])?;
         Ok(())
     }
-
+    
     pub fn add_worker(ctx: Context<AddWorker>, worker: Pubkey) -> Result<()> {
         msg!("Adding worker: {:?}", worker);
         let bounty = &mut ctx.accounts.bounty;

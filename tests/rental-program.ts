@@ -44,6 +44,18 @@ describe("rental-program", () => {
     expect(acc.status).to.deep.equal({ inProgress: {} });
   });
 
+  it("Close a bounty/ Mark as complete", async () => {
+    const tx = await program.methods
+      .closeBounty()
+      .accounts({
+        client: provider.wallet.publicKey,
+        bounty: bountyAccount,
+      })
+      .rpc();
+    const acc = await program.account.bounty.fetch(bountyAccount);
+    expect(acc.status).to.deep.equal({ complete: {} });
+  });
+
   it("Complete a bounty", async () => {
     const tx = await program.methods
       .claimBounty()
