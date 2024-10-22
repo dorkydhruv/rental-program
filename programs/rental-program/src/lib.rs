@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
-declare_id!("CFHjCR3Xe4Ek9rsGeDscS4TtMJwhpRuR4nDkP3B6RmtM");
+declare_id!("Ho96kn5EhyMq9FGAjrvVqeo3wXwuCKuMzySZiQCBJGzw");
 
 #[program]
 pub mod rental_program {
-    use anchor_lang::solana_program::{program::invoke, system_instruction};
+    use anchor_lang::solana_program::{ program::invoke, system_instruction };
     use super::*;
 
     pub fn create_bounty(ctx: Context<CreateBounty>, id: String, amount: u64) -> Result<()> {
@@ -24,7 +24,7 @@ pub mod rental_program {
         invoke(ix, &[from_pubkey, to_pubkey, program_info])?;
         Ok(())
     }
-    
+
     pub fn add_worker(ctx: Context<AddWorker>, worker: Pubkey) -> Result<()> {
         msg!("Adding worker: {:?}", worker);
         let bounty = &mut ctx.accounts.bounty;
@@ -35,14 +35,14 @@ pub mod rental_program {
         Ok(())
     }
 
-    pub fn close_bounty(ctx:Context<CloseBounty>)->Result<()>{
+    pub fn close_bounty(ctx: Context<CloseBounty>) -> Result<()> {
         let bounty = &mut ctx.accounts.bounty;
         bounty.status = BountyStatus::Complete;
         Ok(())
     }
 
     //claim the bounty once the bountySattus is marked as Complete
-    pub fn claim_bounty(_ctx: Context<ClaimBounty>)->Result<()>{
+    pub fn claim_bounty(_ctx: Context<ClaimBounty>) -> Result<()> {
         Ok(())
     }
 }
@@ -52,7 +52,13 @@ pub mod rental_program {
 pub struct CreateBounty<'info> {
     #[account(mut)]
     pub client: Signer<'info>,
-    #[account(init, payer=client, space=Bounty::INIT_SPACE+id.len(), seeds=[b"bounty",client.key().as_ref(),id.as_bytes()],bump)]
+    #[account(
+        init,
+        payer = client,
+        space = Bounty::INIT_SPACE + id.len(),
+        seeds = [b"bounty", client.key().as_ref(), id.as_bytes()],
+        bump
+    )]
     pub bounty: Account<'info, Bounty>,
     pub system_program: Program<'info, System>,
 }
@@ -66,7 +72,7 @@ pub struct AddWorker<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CloseBounty<'info>{
+pub struct CloseBounty<'info> {
     #[account(mut)]
     pub client: Signer<'info>,
     #[account(mut, seeds=[b"bounty",client.key().as_ref(),bounty.id.as_bytes()], bump)]
@@ -74,7 +80,7 @@ pub struct CloseBounty<'info>{
 }
 
 #[derive(Accounts)]
-pub struct ClaimBounty<'info>{
+pub struct ClaimBounty<'info> {
     #[account(mut)]
     pub worker: Signer<'info>,
     #[account(
@@ -93,12 +99,12 @@ pub struct Bounty {
     pub amount: u64,
     pub id: String,
     pub status: BountyStatus,
-    pub worker: Option<Pubkey>, 
+    pub worker: Option<Pubkey>,
 }
 
 impl Space for Bounty {
     const INIT_SPACE: usize = 8 + 32 + 8 + 4 + 1 + 1 + 32;
-//    + 1 (BountyStatus) + 1 (Option bool) + 32 (Pubkey in Option)
+    //    + 1 (BountyStatus) + 1 (Option bool) + 32 (Pubkey in Option)
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
